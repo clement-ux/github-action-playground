@@ -1,0 +1,38 @@
+name: Master Forge Runner
+
+on:
+  # Déclencheur via AWS EventBridge (Webhook)
+  repository_dispatch:
+    types: [run-foundry-script]
+  
+  # Déclencheur manuel (Bouton GitHub) pour tester facilement
+  workflow_dispatch:
+    inputs:
+      script_name:
+        description: 'Nom du script (ex: Counter)'
+        required: true
+        default: 'Counter'
+      extra_args:
+        description: 'Arguments supplémentaires'
+        required: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: foundry-rs/foundry-toolchain@v1
+      
+      - name: Run Dynamic Script
+        run: |
+          # Petite astuce pour gérer soit le déclencheur AWS, soit le manuel
+          SCRIPT_NAME="${{ github.event.client_payload.script_name || inputs.script_name }}"
+          EXTRA_ARGS="${{ github.event.client_payload.extra_args || inputs.extra_args }}"
+          
+          echo "🚀 Lancement du script: $SCRIPT_NAME"
+          
+          forge script script/$SCRIPT_NAME.s.sol \
+            --rpc-url ${{ secrets.RPC_URL }} \
+            --private-key ${{ secrets.PRIVATE_KEY }} \
+            --broadcast \
+            $EXTRA_ARGS
