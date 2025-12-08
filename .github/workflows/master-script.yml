@@ -2,11 +2,11 @@ name: Scheduled Counter Script
 
 on:
   # 1. AUTOMATIC TRIGGER (CRON)
-  schedule:
+  #schedule:
     # Syntax: 'minute hour day month day-of-week'
     # '*/5 * * * *' = Every 5 minutes
     # '0 8 * * *'    = Every day at 08:00 UTC
-    - cron: '*/5 * * * *' 
+    #- cron: '*/5 * * * *' 
   
   # 2. MANUAL TRIGGER (Button)
   workflow_dispatch:
