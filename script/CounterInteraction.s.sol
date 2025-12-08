@@ -12,7 +12,10 @@ contract CounterInteractionScript is Script {
     function run() public {
         vm.startBroadcast();
 
-        counter.increment();
+        require(vm.envExists("NUMBER_VALUE"), "Env variable NUMBER_VALUE not set");
+        uint256 value = vm.envUint("NUMBER_VALUE");
+
+        counter.setNumber(value);
 
         vm.stopBroadcast();
     }
