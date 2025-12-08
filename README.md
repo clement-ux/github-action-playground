@@ -1,3 +1,5 @@
+[![Scheduled Counter Script](https://github.com/clement-ux/github-action-playground/actions/workflows/master-script.yml/badge.svg)](https://github.com/clement-ux/github-action-playground/actions/workflows/master-script.yml)
+
 ## Foundry
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
