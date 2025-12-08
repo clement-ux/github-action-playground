@@ -39,5 +39,7 @@ jobs:
             --broadcast \
             -vvvvv
 
+          find broadcast -name "run-latest.json" -exec grep -o '"transactionHash": "[^"]*"' {} \;
+
         env:
             NUMBER_VALUE: ${{ github.event.inputs.number_value }}
