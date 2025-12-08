@@ -1,4 +1,4 @@
-name: Counter Script `increment()`
+name: Counter Script increment()
 
 on:
   # Trigger via AWS EventBridge (Webhook)
@@ -11,6 +11,7 @@ on:
       number_value:
         description: 'Numeric value to use in the script'
         required: true
+        default: '10'
 
 jobs:
   execute:
@@ -27,19 +28,42 @@ jobs:
           version: "stable"
 
       - name: Install Dependencies
-        run: 	forge install
+        run: forge install
       
-      - name: Run Dynamic Script
+      - name: Run Dynamic Script via AWS KMS
         run: |
           echo "🚀 Launching script: CounterInteraction"
           
+          # 1. Input handling (Compatible with GitHub Button OR AWS Webhook)
+          # If inputs.number_value is empty (webhook case), we look into client_payload
+          VALEUR="${{ inputs.number_value || github.event.client_payload.number_value }}"
+          echo "🔢 Value to send: $VALEUR"
+
+          # 2. Dynamic retrieval of KMS address
+          # We use your AWS credentials to find the associated Ethereum public address
+          SENDER_ADDR=$(cast wallet address --aws)
+          echo "🔑 Signing with AWS KMS Address: $SENDER_ADDR"
+          
+          # 3. Script execution
           forge script script/CounterInteraction.s.sol \
             --rpc-url ${{ secrets.RPC_URL }} \
-            --private-key ${{ secrets.PRIVATE_KEY }} \
+            --aws \
+            --sender $SENDER_ADDR \
             --broadcast \
             -vvvvv
 
+          # 4. Displaying the Hash
           find broadcast -name "run-latest.json" -exec grep -o '"transactionHash": "[^"]*"' {} \;
 
         env:
-            NUMBER_VALUE: ${{ github.event.inputs.number_value }}
+            # For the Solidity script
+            NUMBER_VALUE: ${{ inputs.number_value || github.event.client_payload.number_value }}
+            
+            # For infra (GitHub Secrets)
+            RPC_URL: ${{ secrets.RPC_URL }}
+            
+            # For AWS authentication (Required for --aws)
+            AWS_REGION: ${{ secrets.AWS_REGION }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_KMS_KEY_ID: ${{ secrets.KMS_KEY_ID }}
