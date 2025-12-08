@@ -1,17 +1,20 @@
-name: Counter Script increment()
+name: Scheduled Counter Script
 
 on:
-  # Trigger via AWS EventBridge (Webhook)
-  repository_dispatch:
-    types: [run-foundry-script]
+  # 1. AUTOMATIC TRIGGER (CRON)
+  schedule:
+    # Syntax: 'minute hour day month day-of-week'
+    # '*/5 * * * *' = Every 5 minutes
+    # '0 8 * * *'    = Every day at 08:00 UTC
+    - cron: '*/5 * * * *' 
   
-  # Manual trigger (GitHub Button) for easy testing
+  # 2. MANUAL TRIGGER (Button)
   workflow_dispatch:
     inputs:
       number_value:
-        description: 'Numeric value to use in the script'
-        required: true
-        default: '10'
+        description: 'Value to increment'
+        required: false
+        default: '1'
 
 jobs:
   execute:
@@ -30,38 +33,37 @@ jobs:
       - name: Install Dependencies
         run: forge install
       
-      - name: Run Dynamic Script via AWS KMS
+      - name: Run Script (Auto or Manual)
         run: |
           echo "🚀 Launching script: CounterInteraction"
           
-          # 1. Input handling (Compatible with GitHub Button OR AWS Webhook)
-          # If inputs.number_value is empty (webhook case), we look into client_payload
-          VALEUR="${{ inputs.number_value || github.event.client_payload.number_value }}"
+          # LOGIC:
+          # If triggered manually (inputs exists) -> Use input
+          # If triggered by Cron (inputs empty)   -> Use default value '1'
+          VALEUR="${{ inputs.number_value || '1' }}"
           echo "🔢 Value to send: $VALEUR"
 
-          # 2. Dynamic retrieval of KMS address
-          # We use your AWS credentials to find the associated Ethereum public address
+          # Get KMS Address
           SENDER_ADDR=$(cast wallet address --aws)
           echo "🔑 Signing with AWS KMS Address: $SENDER_ADDR"
           
-          # 3. Script execution
+          # Run Forge
           forge script script/CounterInteraction.s.sol \
             --rpc-url ${{ secrets.RPC_URL }} \
             --aws \
+            --sender $SENDER_ADDR \
             --broadcast \
             -vvvvv
 
-          # 4. Displaying the Hash
+          # Find and display hash
           find broadcast -name "run-latest.json" -exec grep -o '"transactionHash": "[^"]*"' {} \;
 
         env:
-            # For the Solidity script
-            NUMBER_VALUE: ${{ inputs.number_value || github.event.client_payload.number_value }}
+            # Passes the calculated value (Manual or Default) to Solidity
+            NUMBER_VALUE: ${{ inputs.number_value || '1' }}
             
-            # For infra (GitHub Secrets)
+            # Secrets
             RPC_URL: ${{ secrets.RPC_URL }}
-            
-            # For AWS authentication (Required for --aws)
             AWS_REGION: ${{ secrets.AWS_REGION }}
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
