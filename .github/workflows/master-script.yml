@@ -2,7 +2,7 @@ name: Scheduled Counter Script
 
 on:
   repository_dispatch:
-    types: [mon-trigger-cron]
+    types: [external-cron-trigger]
   # 1. AUTOMATIC TRIGGER (CRON)
   #schedule:
     # Syntax: 'minute hour day month day-of-week'
